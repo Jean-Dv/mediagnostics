@@ -1,0 +1,12 @@
+[Unit]
+Description=Run the Mediagnostics PostgreSQL backup daily
+
+[Timer]
+OnCalendar=*-*-* 07:00:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+Unit=mediagnostics-backup.service
+
+[Install]
+WantedBy=timers.target
+

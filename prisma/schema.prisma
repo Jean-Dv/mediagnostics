@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  OPERATOR
+  PATIENT
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum DocumentType {
+  LAB_RESULT
+  INFORMED_CONSENT
+}
+
+enum DocumentStatus {
+  DRAFT
+  PENDING
+  PROCESSING
+  READY_TO_PUBLISH
+  PUBLISHED
+  ANNULLED
+  FAILED
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum AuditResult {
+  SUCCESS
+  FAILURE
+}
+
+enum NotificationType {
+  DOCUMENT_PUBLISHED
+  DOCUMENT_REPLACED
+  DOCUMENT_ANNULLED
+}
+
+model User {
+  id                  String     @id @default(uuid()) @db.Uuid
+  email               String     @unique
+  fullName            String
+  clinicalCode        String?    @unique
+  passwordHash        String
+  role                Role
+  status              UserStatus @default(ACTIVE)
+  mustChangePassword  Boolean    @default(true)
+  sessionVersion      Int        @default(0)
+  failedLoginAttempts Int        @default(0)
+  lockedUntil         DateTime?
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  patientDocuments  Document[]     @relation("PatientDocuments")
+  uploadedDocuments Document[]     @relation("UploadedDocuments")
+  annulledDocuments Document[]     @relation("AnnulledDocuments")
+  auditEvents       AuditEvent[]
+  notifications     Notification[]
+
+  @@index([role, status])
+  @@map("users")
+}
+
+model Document {
+  id                     String         @id @default(uuid()) @db.Uuid
+  patientId              String         @db.Uuid
+  uploadedById           String         @db.Uuid
+  type                   DocumentType
+  title                  String
+  documentDate           DateTime
+  description            String?
+  examType               String?
+  procedureName          String?
+  status                 DocumentStatus @default(DRAFT)
+  mimeType               String         @default("application/pdf")
+  fileSizeBytes          Int
+  pageCount              Int?
+  sha256                 String?
+  originalObjectKey      String         @unique
+  protectedObjectKey     String?        @unique
+  previewObjectKey       String?        @unique
+  passwordCiphertext     String?
+  passwordInitialization String?
+  passwordAuthTag        String?
+  publishedAt            DateTime?
+  annulledAt             DateTime?
+  annulledById           String?        @db.Uuid
+  annulmentReason        String?
+  replacesId             String?        @unique @db.Uuid
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+
+  patient        User            @relation("PatientDocuments", fields: [patientId], references: [id], onDelete: Restrict)
+  uploadedBy     User            @relation("UploadedDocuments", fields: [uploadedById], references: [id], onDelete: Restrict)
+  annulledBy     User?           @relation("AnnulledDocuments", fields: [annulledById], references: [id], onDelete: Restrict)
+  replaces       Document?       @relation("DocumentReplacement", fields: [replacesId], references: [id], onDelete: Restrict)
+  replacedBy     Document?       @relation("DocumentReplacement")
+  processingJobs ProcessingJob[]
+  notifications  Notification[]
+
+  @@index([patientId, status, documentDate])
+  @@index([uploadedById, createdAt])
+  @@map("documents")
+}
+
+model ProcessingJob {
+  id           String    @id @default(uuid()) @db.Uuid
+  documentId   String    @db.Uuid
+  status       JobStatus @default(PENDING)
+  attempts     Int       @default(0)
+  errorCode    String?
+  errorMessage String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@index([documentId, createdAt])
+  @@map("processing_jobs")
+}
+
+model AuditEvent {
+  id           String      @id @default(uuid()) @db.Uuid
+  actorId      String?     @db.Uuid
+  action       String
+  resourceType String
+  resourceId   String?
+  result       AuditResult
+  ipAddress    String?
+  userAgent    String?
+  metadata     Json?
+  createdAt    DateTime    @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt])
+  @@index([resourceType, resourceId, createdAt])
+  @@index([action, result, createdAt])
+  @@map("audit_events")
+}
+
+model Notification {
+  id         String           @id @default(uuid()) @db.Uuid
+  userId     String           @db.Uuid
+  documentId String?          @db.Uuid
+  type       NotificationType
+  readAt     DateTime?
+  createdAt  DateTime         @default(now())
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
+}

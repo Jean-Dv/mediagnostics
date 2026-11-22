@@ -1,0 +1,16 @@
+.git
+.github
+.husky
+.agents
+.aws
+.codex
+.env
+.env.*
+!.env.example
+apps/web/dist
+coverage
+dist
+docs
+node_modules
+project.pdf
+*.log

@@ -1,0 +1,23 @@
+{
+  "Rules": [
+    {
+      "ID": "AbortIncompleteMultipartUploads",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "" },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 7 }
+    },
+    {
+      "ID": "ExpireDatabaseBackups",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "backups/postgresql/" },
+      "Expiration": { "Days": 14 },
+      "NoncurrentVersionExpiration": { "NoncurrentDays": 1 }
+    },
+    {
+      "ID": "RemoveExpiredBackupDeleteMarkers",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "backups/postgresql/" },
+      "Expiration": { "ExpiredObjectDeleteMarker": true }
+    }
+  ]
+}

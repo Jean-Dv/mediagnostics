@@ -1,0 +1,77 @@
+{
+  "name": "mediagnostics",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.17.0",
+  "engines": {
+    "node": ">=24.7.0 <25",
+    "pnpm": ">=12.17.0 <13"
+  },
+  "scripts": {
+    "build": "pnpm build:server && pnpm --dir apps/web build",
+    "build:image:api": "docker build --file infrastructure/containers/api.Dockerfile --tag mediagnostics-api:local .",
+    "build:image:web": "docker build --file infrastructure/containers/web.Dockerfile --tag mediagnostics-web:local .",
+    "build:image:worker": "docker build --file infrastructure/containers/worker.Dockerfile --tag mediagnostics-worker:local .",
+    "build:server": "tsc -p tsconfig.server.json",
+    "dev:api": "node infrastructure/scripts/run-server-development.mjs api",
+    "dev:worker": "node infrastructure/scripts/run-server-development.mjs worker",
+    "dev:web": "pnpm --dir apps/web dev",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "prisma:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "node --import tsx prisma/seed.ts",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1175.0",
+    "@nestjs/common": "^12.4.0",
+    "@nestjs/core": "^12.4.0",
+    "@nestjs/platform-express": "^12.4.0",
+    "@nestjs/swagger": "^12.1.2",
+    "@prisma/adapter-pg": "7.10.1",
+    "@prisma/client": "7.10.1",
+    "bullmq": "^6.7.8",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
+    "connect-redis": "^11.0.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.3.0",
+    "express-session": "^1.19.0",
+    "helmet": "^8.1.0",
+    "pg": "^8.16.3",
+    "redis": "^6.3.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/express": "^5.0.5",
+    "@types/express-session": "^1.19.0",
+    "@types/node": "^24.10.1",
+    "@types/pg": "^8.15.6",
+    "@vitest/coverage-v8": "^4.0.10",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
+    "prettier": "^3.6.2",
+    "prisma": "7.10.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vitest": "^4.0.10"
+  },
+  "lint-staged": {
+    "*.{js,mjs,cjs,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,yaml,yml,md,css,html}": "prettier --write"
+  }
+}

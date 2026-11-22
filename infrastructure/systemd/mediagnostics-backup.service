@@ -1,0 +1,14 @@
+[Unit]
+Description=Mediagnostics PostgreSQL backup
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/mediagnostics
+ExecStart=/opt/mediagnostics/infrastructure/scripts/backup-postgres.sh /opt/mediagnostics/.env.production
+Nice=10
+
