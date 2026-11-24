@@ -50,9 +50,11 @@ services:
   redis:
     image: redis:8-alpine
     command:
-      - /bin/sh
-      - -c
-      - exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"
+      - redis-server
+      - --appendonly
+      - 'yes'
+      - --requirepass
+      - ${REDIS_PASSWORD}
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:

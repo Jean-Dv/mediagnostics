@@ -69,7 +69,8 @@ La aplicación no se ejecuta como `root`:
 
 - API y Worker usan el usuario `node`;
 - Caddy usa el usuario `caddy` y escucha en 8080/8443 dentro del contenedor;
-- las imágenes oficiales de PostgreSQL y Redis deben verificarse en ejecución;
+- PostgreSQL reduce privilegios al usuario interno `postgres`;
+- Redis recibe `redis-server` directamente para que su entrypoint oficial reduzca privilegios al usuario interno `redis`;
 - ningún contenedor recibe el socket de Docker ni utiliza modo privilegiado.
 
 El grupo `docker` permite controlar el daemon y equivale a privilegios administrativos. Su membresía debe limitarse al usuario `ubuntu`:
@@ -92,6 +93,21 @@ docker compose --env-file .env.production -f compose.production.yaml exec -T web
 docker compose --env-file .env.production -f compose.production.yaml exec -T postgres id
 docker compose --env-file .env.production -f compose.production.yaml exec -T redis id
 ```
+
+En PostgreSQL y Redis, `docker compose exec ... id` puede crear el proceso auxiliar como root porque las imágenes oficiales no declaran un `USER` permanente. La evidencia correcta del proceso principal se obtiene con `docker top`:
+
+```bash
+for service in api worker web postgres redis; do
+  container_id=$(docker compose \
+    --env-file .env.production \
+    -f compose.production.yaml \
+    ps -q "$service")
+
+  docker top "$container_id" -eo user,pid,ppid,comm,args
+done
+```
+
+El proceso principal de Redis debe aparecer como un UID no privilegiado y nunca como `root`.
 
 Comprueba el filesystem, capabilities, escalamiento y límites sin imprimir variables de entorno:
 
