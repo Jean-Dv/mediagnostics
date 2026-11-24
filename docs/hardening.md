@@ -192,3 +192,20 @@ systemctl status apt-daily.timer apt-daily-upgrade.timer --no-pager
 ```
 
 No se debe deshabilitar un servicio solo por desconocer su nombre. Primero se identifica su función y dependencia con EC2, red, SSH, Docker, sincronización horaria o monitoreo.
+
+En la instancia de producción se deshabilitaron los siguientes servicios después de comprobar que no tenían dependencias activas:
+
+- `ModemManager.service`: EC2 no utiliza módems celulares;
+- `udisks2.service`: el servidor no tiene interfaz gráfica ni discos removibles;
+- `multipathd.service` y `multipathd.socket`: el único volumen EBS usa una ruta NVMe normal y `multipath -ll` no reporta rutas múltiples.
+
+Se conservan `chrony`, Docker, containerd, SSH, `systemd-networkd`, resolución DNS, logging, actualizaciones automáticas, consola serial, Snap y Amazon SSM Agent. Después de cada cambio se verifican el montaje raíz y readiness:
+
+```bash
+findmnt /
+lsblk -o NAME,TYPE,SIZE,FSTYPE,MOUNTPOINTS
+curl --fail --silent --show-error \
+  https://mediagnostics.moonshard-wow.com/api/v1/health/ready
+```
+
+AppArmor permanece activo y los procesos de API, Worker, Caddy, Redis y PostgreSQL utilizan el perfil `docker-default` en modo `enforce`.
