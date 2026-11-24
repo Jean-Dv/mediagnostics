@@ -6,6 +6,26 @@ Usa una instancia EC2 `t3.medium`, Ubuntu Server 24.04 LTS, arquitectura `x86_64
 
 El registro DNS `A` de `mediagnostics.moonshard-wow.com` debe apuntar a la IPv4 pública de EC2. Como AWS Academy bloquea Elastic IP, actualízalo después de cada ciclo `stop/start`.
 
+El Security Group es el firewall principal: permite `80/tcp` y `443/tcp` desde Internet y limita `22/tcp` a la IP administrativa en formato `/32`. No abras PostgreSQL, Redis, el puerto 3000 del API ni rangos amplios de puertos.
+
+## Hardening del acceso SSH
+
+Después de comprobar el acceso mediante llave, instala la política versionada y valida la configuración antes de recargar OpenSSH:
+
+```bash
+sudo install \
+  --owner=root \
+  --group=root \
+  --mode=0644 \
+  infrastructure/ssh/00-mediagnostics-hardening.conf \
+  /etc/ssh/sshd_config.d/00-mediagnostics-hardening.conf
+
+sudo sshd -t
+sudo systemctl reload ssh
+```
+
+Mantén abierta la sesión actual y verifica el acceso desde una segunda terminal antes de cerrarla. Consulta [la guía de hardening](hardening.md) para revisar la configuración efectiva, revertirla y reunir evidencias de mínimo privilegio.
+
 ## Bucket privado
 
 Crea un bucket S3 con nombre globalmente único en `us-east-1`. Habilita bloqueo público, cifrado SSE-S3 y versionado. Aplica la política incluida:
